@@ -3036,40 +3036,102 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 
 <style id="world-painter-clean-ui">
+:root{
+  --wp-accent-1:#8a4de8; --wp-accent-2:#4da6ff; --wp-danger:#ff5252;
+  --wp-glass:rgba(16,20,30,0.86); --wp-glass-strong:rgba(14,18,28,0.95);
+  --wp-border:rgba(255,255,255,0.12); --wp-border-strong:rgba(255,255,255,0.18);
+  --wp-shadow:0 10px 34px rgba(0,0,0,0.4); --wp-shadow-lg:0 18px 52px rgba(0,0,0,0.55);
+  --wp-radius:16px; --wp-radius-sm:11px; --wp-font:'Geist Mono', monospace;
+  --wp-tool-size:44px; --wp-toolbar-h:66px;
+}
 #worldPainterWrap { position:fixed; inset:0; z-index:9996; display:none; background: radial-gradient(ellipse at top, #87CEEB 0%, #a8d8ff 40%, #6ba3d4 100%); }
 #worldPainterWrap.active { display:block !important; }
-#wpCanvas { width:100% !important; height:100% !important; display:block; position:absolute; inset:0; }
-#wpTopBar { position:fixed; top:14px; left:50%; transform:translateX(-50%); z-index:10001; display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:center; max-width:95vw; }
-.wpPill { padding:8px 14px; border-radius:12px; background:rgba(15,20,30,0.88); backdrop-filter:blur(16px); border:1px solid rgba(255,255,255,0.12); color:#fff; font-size:10px; font-family:Geist Mono, monospace; cursor:pointer; }
-#wpRandom { background:linear-gradient(135deg, #8a4de8, #4da6ff); border:none; color:#fff; font-weight:600; }
-#wpControls { position:fixed; left:12px; top:50%; transform:translateY(-50%); z-index:10001; display:flex; flex-direction:column; gap:8px; padding:10px; background:rgba(15,20,30,0.88); backdrop-filter:blur(18px); border:1px solid rgba(255,255,255,0.12); border-radius:14px; }
-.wpCtrl { padding:8px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.06); color:#fff; font-size:11px; font-family:Geist Mono; cursor:pointer; }
-.wpCtrl.active { background:#fff; color:#111; }
-#wpToolbarClean { position:fixed; left:50%; bottom:14px; transform:translateX(-50%); z-index:10001; display:flex; flex-direction:column; gap:8px; align-items:center; max-width:96vw; }
-.wpToolbarGroup { display:flex; gap:6px; padding:8px 10px; background:rgba(15,20,30,0.9); backdrop-filter:blur(18px); border:1px solid rgba(255,255,255,0.12); border-radius:16px; box-shadow:0 8px 32px rgba(0,0,0,0.35); flex-wrap:wrap; justify-content:center; align-items:center; }
-.wpToolbarLabel { font-size:8px; font-weight:700; font-family:Geist Mono; color:rgba(255,255,255,0.5); letter-spacing:0.6px; margin-right:4px; }
-.wpTool { width:40px; height:40px; border-radius:10px; border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.06); color:#fff; font-size:17px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.16s; }
-.wpTool:hover { background:rgba(255,255,255,0.14); transform:translateY(-1px); }
-.wpTool.active { background:#fff !important; color:#111 !important; border-color:#fff !important; box-shadow:0 0 0 2px rgba(255,255,255,0.2); }
-#wpObjectControls { position:fixed; right:14px; top:50%; transform:translateY(-50%); z-index:10002; display:none; flex-direction:column; gap:8px; padding:12px; background:rgba(15,20,30,0.94); backdrop-filter:blur(22px); border:1px solid rgba(255,255,255,0.14); border-radius:16px; min-width:220px; max-width:260px; max-height:82vh; overflow:auto; box-shadow:0 16px 48px rgba(0,0,0,0.55); }
-#wpObjectControls.active { display:flex !important; }
-.wpSection { background:rgba(255,255,255,0.04); border-radius:10px; padding:8px; }
-.wpSectionTitle { font-size:9px; font-weight:700; font-family:Geist Mono; color:rgba(255,255,255,0.7); letter-spacing:0.5px; margin-bottom:6px; display:flex; align-items:center; gap:6px; }
-.wpBtnGrid { display:grid; gap:5px; }
+#wpCanvas { width:100% !important; height:100% !important; display:block; position:absolute; inset:0; touch-action:none; }
+#worldPainterWrap *, #wpObjectControls *, #wpModelsBar * { box-sizing:border-box; }
+#worldPainterWrap button, #wpObjectControls button, #wpModelsBar button { -webkit-tap-highlight-color:transparent; user-select:none; }
+#worldPainterWrap button:focus-visible, #wpObjectControls button:focus-visible, #wpModelsBar button:focus-visible, #wpObjectControls input:focus-visible { outline:2px solid var(--wp-accent-2); outline-offset:2px; }
+
+/* ---- Top bar ---- */
+#wpTopBar { position:fixed; top:calc(14px + env(safe-area-inset-top,0px)); left:50%; transform:translateX(-50%); z-index:10001; display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:center; max-width:94vw; }
+.wpPill { padding:9px 14px; border-radius:var(--wp-radius-sm); background:var(--wp-glass); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); border:1px solid var(--wp-border); color:#fff; font-size:10.5px; font-family:var(--wp-font); font-weight:600; letter-spacing:0.3px; cursor:pointer; box-shadow:var(--wp-shadow); transition:transform 0.15s ease, background 0.15s ease, border-color 0.15s ease; white-space:nowrap; }
+.wpPill:hover { background:rgba(255,255,255,0.1); transform:translateY(-1px); border-color:var(--wp-border-strong); }
+.wpPill:active { transform:translateY(0); }
+#wpRandom { background:linear-gradient(135deg, var(--wp-accent-1), var(--wp-accent-2)); border:none; color:#fff; box-shadow:0 8px 22px -6px rgba(138,77,232,0.7); }
+#wpRandom:hover { filter:brightness(1.08); }
+
+/* ---- Mode switcher (left) ---- */
+#wpControls { position:fixed; left:calc(12px + env(safe-area-inset-left,0px)); top:50%; transform:translateY(-50%); z-index:10001; display:flex; flex-direction:column; gap:6px; padding:8px; background:var(--wp-glass); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); border:1px solid var(--wp-border); border-radius:var(--wp-radius); box-shadow:var(--wp-shadow); }
+.wpCtrl { padding:9px 13px; border-radius:var(--wp-radius-sm); border:1px solid transparent; background:rgba(255,255,255,0.05); color:#fff; font-size:11px; font-family:var(--wp-font); font-weight:500; cursor:pointer; text-align:left; white-space:nowrap; transition:all 0.15s ease; }
+.wpCtrl:hover { background:rgba(255,255,255,0.13); }
+.wpCtrl.active { background:linear-gradient(135deg, var(--wp-accent-1), var(--wp-accent-2)); color:#fff; box-shadow:0 4px 14px -4px rgba(138,77,232,0.65); }
+
+/* ---- Bottom toolbar ---- */
+#wpToolbarClean { position:fixed; left:50%; bottom:calc(14px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%); z-index:10001; display:flex; flex-direction:row; gap:8px; align-items:flex-end; max-width:96vw; }
+.wpToolbarGroup { display:flex; gap:5px; padding:8px; background:var(--wp-glass); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); border:1px solid var(--wp-border); border-radius:var(--wp-radius); box-shadow:var(--wp-shadow); align-items:center; }
+.wpToolbarLabel { font-size:8px; font-weight:700; font-family:var(--wp-font); color:rgba(255,255,255,0.45); letter-spacing:0.7px; padding:0 2px 0 4px; writing-mode:horizontal-tb; }
+.wpTool { width:var(--wp-tool-size); height:var(--wp-tool-size); border-radius:var(--wp-radius-sm); border:1px solid var(--wp-border); background:rgba(255,255,255,0.05); color:#fff; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease; position:relative; }
+.wpTool:hover { background:rgba(255,255,255,0.15); transform:translateY(-2px); }
+.wpTool:active { transform:translateY(0); }
+.wpTool.active { background:#fff !important; color:#111 !important; border-color:#fff !important; box-shadow:0 0 0 3px rgba(138,77,232,0.35), 0 4px 14px -2px rgba(0,0,0,0.4); }
+
+/* ---- Right-side object panel ---- */
+#wpObjectControls { position:fixed; right:calc(14px + env(safe-area-inset-right,0px)); top:50%; transform:translateY(-50%); z-index:10002; display:none; flex-direction:column; gap:8px; padding:14px; background:var(--wp-glass-strong); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); border:1px solid var(--wp-border-strong); border-radius:20px; min-width:230px; max-width:270px; max-height:min(82vh, 640px); overflow-y:auto; box-shadow:var(--wp-shadow-lg); scrollbar-width:thin; scrollbar-color:rgba(255,255,255,0.25) transparent; }
+#wpObjectControls.active { display:flex !important; animation:wpPanelIn 0.18s ease; }
+#wpObjectControls::-webkit-scrollbar { width:6px; }
+#wpObjectControls::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.2); border-radius:6px; }
+.wpSection { background:rgba(255,255,255,0.045); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:10px; }
+.wpSectionTitle { font-size:9px; font-weight:700; font-family:var(--wp-font); color:rgba(255,255,255,0.72); letter-spacing:0.6px; margin-bottom:8px; display:flex; align-items:center; gap:6px; text-transform:uppercase; }
+.wpBtnGrid { display:grid; gap:6px; }
 .wpBtnGrid.cols3 { grid-template-columns:repeat(3,1fr); }
 .wpBtnGrid.cols2 { grid-template-columns:repeat(2,1fr); }
-.wpActionBtn { padding:7px 6px; border-radius:8px; border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.06); color:#fff; font-size:10px; font-family:Geist Mono; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:3px; transition:all 0.12s; }
-.wpActionBtn:hover { background:#fff; color:#111; }
-.wpActionBtn.primary { background:#fff; color:#111; font-weight:600; }
-.wpActionBtn.danger { background:rgba(255,80,80,0.15); border-color:rgba(255,80,80,0.25); color:#ff9a9a; }
-.wpActionBtn.danger:hover { background:#ff4d4d; color:#fff; }
-#wpModelsBar { position:fixed; right:14px; bottom:84px; z-index:10002; display:none; flex-direction:column; gap:6px; padding:10px; background:rgba(15,20,30,0.92); backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.12); border-radius:14px; max-height:44vh; overflow:auto; min-width:210px; max-width:260px; box-shadow:0 12px 40px rgba(0,0,0,0.5); }
-#wpModelsBar.active { display:flex !important; }
-.wpModelItem { padding:7px 9px; border-radius:9px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); color:#fff; font-size:10px; font-family:Geist Mono; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
-.wpModelItem:hover { background:rgba(255,255,255,0.12); }
-#wpHint { position:fixed; bottom:74px; left:50%; transform:translateX(-50%); z-index:10001; padding:7px 12px; border-radius:9px; background:rgba(0,0,0,0.78); color:#fff; font-size:10px; font-family:Geist Mono; pointer-events:none; opacity:0; transition:opacity 0.3s; max-width:90vw; text-align:center; }
+.wpActionBtn { padding:9px 6px; border-radius:9px; border:1px solid var(--wp-border); background:rgba(255,255,255,0.055); color:#fff; font-size:10px; font-family:var(--wp-font); font-weight:500; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:4px; min-height:36px; transition:background 0.14s ease, color 0.14s ease, transform 0.1s ease; }
+.wpActionBtn:hover { background:#fff; color:#111; transform:translateY(-1px); }
+.wpActionBtn:active { transform:translateY(0); }
+.wpActionBtn.primary { background:linear-gradient(135deg, var(--wp-accent-1), var(--wp-accent-2)); border-color:transparent; color:#fff; font-weight:600; }
+.wpActionBtn.primary:hover { filter:brightness(1.1); color:#fff; }
+.wpActionBtn.danger { background:rgba(255,82,82,0.14); border-color:rgba(255,82,82,0.28); color:#ff9a9a; }
+.wpActionBtn.danger:hover { background:var(--wp-danger); color:#fff; }
+
+/* ---- Models bar ---- */
+#wpModelsBar { position:fixed; right:calc(14px + env(safe-area-inset-right,0px)); bottom:calc(var(--wp-toolbar-h) + 30px); z-index:10002; display:none; flex-direction:column; gap:6px; padding:12px; background:var(--wp-glass-strong); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid var(--wp-border-strong); border-radius:16px; max-height:42vh; overflow-y:auto; min-width:220px; max-width:270px; box-shadow:var(--wp-shadow-lg); scrollbar-width:thin; scrollbar-color:rgba(255,255,255,0.25) transparent; }
+#wpModelsBar.active { display:flex !important; animation:wpPanelIn 0.18s ease; }
+#wpModelsBar::-webkit-scrollbar { width:6px; }
+#wpModelsBar::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.2); border-radius:6px; }
+.wpModelItem { padding:8px 10px; border-radius:10px; background:rgba(255,255,255,0.055); border:1px solid var(--wp-border); color:#fff; font-size:10px; font-family:var(--wp-font); cursor:pointer; display:flex; justify-content:space-between; align-items:center; gap:6px; transition:background 0.14s ease; }
+.wpModelItem:hover { background:rgba(255,255,255,0.13); }
+
+/* ---- Hint toast ---- */
+#wpHint { position:fixed; bottom:calc(var(--wp-toolbar-h) + 14px + env(safe-area-inset-bottom,0px)); left:50%; transform:translateX(-50%); z-index:10001; padding:8px 14px; border-radius:var(--wp-radius-sm); background:rgba(0,0,0,0.8); color:#fff; font-size:10.5px; font-family:var(--wp-font); pointer-events:none; opacity:0; transition:opacity 0.3s ease, transform 0.3s ease; max-width:90vw; text-align:center; box-shadow:var(--wp-shadow); }
 #wpHint.show { opacity:1; }
+
+/* ---- Drop zone ---- */
 #wpDropZone { position:fixed; inset:0; z-index:10003; background:rgba(10,14,20,0.88); backdrop-filter:blur(14px); display:none; align-items:center; justify-content:center; border:3px dashed rgba(255,255,255,0.25); }
+
+@keyframes wpPanelIn { from{ opacity:0; transform:translateY(6px) scale(0.98); } to{ opacity:1; transform:none; } }
+@media (hover:none){ .wpTool:hover, .wpActionBtn:hover, .wpModelItem:hover, .wpPill:hover, .wpCtrl:hover { transform:none; } }
+
+/* ==================== MOBILE ==================== */
+@media (max-width: 760px) {
+  :root{ --wp-tool-size:40px; --wp-toolbar-h:112px; }
+  #wpTopBar { top:calc(10px + env(safe-area-inset-top,0px)); gap:6px; max-width:98vw; }
+  .wpPill { padding:7px 10px; font-size:9.5px; }
+
+  #wpControls { left:auto; right:calc(10px + env(safe-area-inset-right,0px)); top:auto; bottom:calc(var(--wp-toolbar-h) + 20px + env(safe-area-inset-bottom,0px)); transform:none; flex-direction:row; padding:6px; gap:4px; }
+  .wpCtrl { padding:8px; font-size:15px; line-height:1; }
+  .wpCtrl span.wpCtrlLabel { display:none; }
+
+  #wpToolbarClean { flex-direction:column; align-items:center; bottom:calc(8px + env(safe-area-inset-bottom,0px)); max-width:100vw; width:100%; left:0; right:0; transform:none; padding:0 8px; }
+  .wpToolbarGroup { width:100%; max-width:420px; overflow-x:auto; justify-content:flex-start; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+  .wpToolbarGroup::-webkit-scrollbar { display:none; }
+  .wpToolbarLabel { display:none; }
+
+  #wpObjectControls { left:0; right:0; top:auto; bottom:0; transform:none; width:100%; max-width:100%; min-width:0; border-radius:20px 20px 0 0; max-height:66vh; padding:14px 14px calc(14px + env(safe-area-inset-bottom,0px)); box-shadow:0 -12px 40px rgba(0,0,0,0.5); }
+  #wpObjectControls::before { content:""; display:block; width:36px; height:4px; border-radius:3px; background:rgba(255,255,255,0.25); margin:-4px auto 4px; }
+
+  #wpModelsBar { left:0; right:0; top:calc(62px + env(safe-area-inset-top,0px)); bottom:auto; width:100%; max-width:100%; min-width:0; border-radius:0 0 20px 20px; max-height:38vh; }
+
+  #wpHint { bottom:calc(var(--wp-toolbar-h) + 8px + env(safe-area-inset-bottom,0px)); font-size:10px; }
+}
 </style>
 
 <div id="worldPainterWrap">
@@ -3082,10 +3144,10 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     <button id="wpExit" class="wpPill">← Back</button>
   </div>
   <div id="wpControls">
-    <button class="wpCtrl active" data-mode="paint">🎨 Paint</button>
-    <button class="wpCtrl" data-mode="explore">🚶 Explore</button>
-    <button class="wpCtrl" data-mode="hand">✋ Hand</button>
-    <button class="wpCtrl" data-mode="daynight">🌙 Night</button>
+    <button class="wpCtrl active" data-mode="paint" title="Paint">🎨<span class="wpCtrlLabel"> Paint</span></button>
+    <button class="wpCtrl" data-mode="explore" title="Explore">🚶<span class="wpCtrlLabel"> Explore</span></button>
+    <button class="wpCtrl" data-mode="hand" title="Hand">✋<span class="wpCtrlLabel"> Hand</span></button>
+    <button class="wpCtrl" data-mode="daynight" title="Day / Night">🌙<span class="wpCtrlLabel"> Night</span></button>
   </div>
   <div id="wpToolbarClean">
     <div class="wpToolbarGroup">
