@@ -3835,30 +3835,20 @@ window.THREE = THREE; // expose for the plain (non-module) View Options script b
       hint('Clear & Sunny');
     });
 
-    // ===== EXPLORE MODE (walk a grounded avatar, GTA-style chase cam) =====
+    // ===== EXPLORE MODE (true first-person — the camera IS your eyes, ground-clamped) =====
     const perspectives={
-      human:{scale:1,    camDist:4.0, camHeight:1.5,  speed:2.4, fov:62, color:0x3a6fd8},
-      elephant:{scale:2.6,camDist:7.5, camHeight:2.6,  speed:1.7, fov:55, color:0x8a8a8a},
-      dog:{scale:0.42,   camDist:2.3, camHeight:0.95, speed:3.4, fov:75, color:0xb5793a},
-      ant:{scale:0.06,   camDist:0.6, camHeight:0.28, speed:0.9, fov:92, color:0x2a1a10},
-      mosquito:{scale:0.022,camDist:0.35,camHeight:0.16,speed:1.3, fov:100, color:0x333333}
+      human:{eye:1.65, speed:2.4, fov:62},
+      elephant:{eye:2.8, speed:1.7, fov:55},
+      dog:{eye:0.55, speed:3.4, fov:75},
+      ant:{eye:0.05, speed:0.9, fov:92},
+      mosquito:{eye:0.16, speed:1.3, fov:100}
     };
-    let exploring=false, currentPersp='human', exKeys={}, exYaw=0, exPitch=0.18, exPointerLocked=false, exAnimId=null;
-    let exAvatar=null, exAvatarX=0, exAvatarY=0.6, exAvatarZ=3, exFacing=0;
+    let exploring=false, currentPersp='human', exKeys={}, exYaw=0, exPitch=0, exPointerLocked=false, exAnimId=null;
+    let exPosX=0, exPosY=0.6, exPosZ=3;
     const exRay=new THREE.Raycaster(), exDown=new THREE.Vector3(0,-1,0);
 
-    function ensureAvatar(){
-      if(exAvatar) return exAvatar;
-      const scene=getRefs().scene; if(!scene) return null;
-      const g=new THREE.Group();
-      const body=new THREE.Mesh(new THREE.SphereGeometry(0.32,20,16), new THREE.MeshStandardMaterial({color:0x3a6fd8,roughness:0.5,metalness:0.08}));
-      body.castShadow=true; g.add(body);
-      const nose=new THREE.Mesh(new THREE.ConeGeometry(0.09,0.24,8), new THREE.MeshStandardMaterial({color:0xffffff,roughness:0.6}));
-      nose.rotation.x=Math.PI/2; nose.position.set(0,0.04,0.34); g.add(nose);
-      g.userData.body=body; g.visible=false; scene.add(g); exAvatar=g; return g;
-    }
-    // Ground-clamp: raycast straight down onto the actual island mesh so the avatar/camera
-    // always sit ON the terrain (with its hills) instead of flying or clipping through it.
+    // Ground-clamp: raycast straight down onto the actual island mesh so you always walk ON
+    // the terrain (with its hills) instead of flying above it or clipping through it.
     function groundHeightAt(x,z){
       const bg=window._wpBaseGround; if(!bg) return null;
       exRay.set(new THREE.Vector3(x,60,z), exDown);
@@ -3873,6 +3863,7 @@ window.THREE = THREE; // expose for the plain (non-module) View Options script b
       const p=perspectives[currentPersp];
       const spd=p.speed*(exKeys['shift']?2.2:1)*0.016;
 
+      // Movement is relative to where you're LOOKING (yaw only — pitch doesn't tilt your walk)
       const fwd={x:Math.sin(exYaw), z:Math.cos(exYaw)};
       const right={x:Math.cos(exYaw), z:-Math.sin(exYaw)};
       let mx=0, mz=0;
@@ -3882,46 +3873,29 @@ window.THREE = THREE; // expose for the plain (non-module) View Options script b
       if(exKeys['a']){ mx-=right.x; mz-=right.z; }
       if(mx||mz){
         const len=Math.hypot(mx,mz); mx/=len; mz/=len;
-        const nx=exAvatarX+mx*spd, nz=exAvatarZ+mz*spd;
+        const nx=exPosX+mx*spd, nz=exPosZ+mz*spd;
         const gy=groundHeightAt(nx,nz);
-        if(gy!==null){ exAvatarX=nx; exAvatarZ=nz; exFacing=Math.atan2(mx,mz); } // no ground = edge of island, stay put
+        if(gy!==null){ exPosX=nx; exPosZ=nz; } // no ground under the step = edge of island, don't walk off it
       }
-      const gy=groundHeightAt(exAvatarX,exAvatarZ);
-      exAvatarY = gy!==null ? gy : exAvatarY;
+      const gy=groundHeightAt(exPosX,exPosZ);
+      if(gy!==null) exPosY=gy;
 
-      if(exAvatar){
-        exAvatar.position.set(exAvatarX, exAvatarY+p.scale*0.32, exAvatarZ);
-        exAvatar.scale.setScalar(p.scale);
-        let d=exFacing-exAvatar.rotation.y; while(d>Math.PI)d-=2*Math.PI; while(d<-Math.PI)d+=2*Math.PI;
-        exAvatar.rotation.y+=d*0.2;
-      }
-
-      // GTA-style chase camera: orbits the avatar on mouse-look, always re-clamped to terrain
-      const pitch=Math.max(-0.5,Math.min(0.85,exPitch));
-      const horizR=p.camDist*Math.cos(pitch);
-      const camX=exAvatarX-Math.sin(exYaw)*horizR, camZ=exAvatarZ-Math.cos(exYaw)*horizR;
-      let camY=exAvatarY+p.camHeight+p.camDist*Math.sin(pitch);
-      const camGY=groundHeightAt(camX,camZ);
-      if(camGY!==null) camY=Math.max(camY,camGY+0.25);
-      cam.position.set(camX,camY,camZ);
-      cam.up.set(0,1,0);
-      cam.lookAt(exAvatarX, exAvatarY+p.scale*0.5, exAvatarZ);
+      cam.position.set(exPosX, exPosY+p.eye, exPosZ);
+      cam.rotation.order='YXZ'; cam.rotation.y=exYaw; cam.rotation.x=exPitch;
       if(cam.fov!==p.fov){ cam.fov=p.fov; cam.updateProjectionMatrix(); }
 
       const renderer=refs.renderer, scene=refs.scene; if(renderer&&scene) renderer.render(scene,cam);
     }
     function onExKeyDown(e){ if(!exploring) return; exKeys[e.key.toLowerCase()]=true; if(e.key==='Shift') exKeys['shift']=true; if(e.key==='Escape') exitExplore(); }
     function onExKeyUp(e){ exKeys[e.key.toLowerCase()]=false; if(e.key==='Shift') exKeys['shift']=false; }
-    function onExMouseMove(e){ if(!exploring||!exPointerLocked) return; exYaw-=e.movementX*0.0026; exPitch-=e.movementY*0.0022; exPitch=Math.max(-0.5,Math.min(0.85,exPitch)); }
+    function onExMouseMove(e){ if(!exploring||!exPointerLocked) return; exYaw-=e.movementX*0.0024; exPitch-=e.movementY*0.0022; exPitch=Math.max(-1.4,Math.min(1.4,exPitch)); }
     function enterExplore(){
       const refs=getRefs(); const cam=refs.camera, orbit=refs.orbit, canvas=refs.renderer?.domElement;
       if(!cam||!canvas){ hint('Open World Painter first'); return; }
       exploring=true; if(orbit) orbit.enabled=false;
-      const av=ensureAvatar(); const p=perspectives[currentPersp];
-      exAvatarX=0; exAvatarZ=3; exFacing=0;
-      const gy=groundHeightAt(exAvatarX,exAvatarZ); exAvatarY=gy!==null?gy:0.6;
-      if(av){ av.visible=true; av.userData.body.material.color.setHex(p.color); av.scale.setScalar(p.scale); av.position.set(exAvatarX,exAvatarY+p.scale*0.32,exAvatarZ); }
-      exYaw=0; exPitch=0.18;
+      exPosX=0; exPosZ=3;
+      const gy=groundHeightAt(exPosX,exPosZ); exPosY=gy!==null?gy:0.6;
+      exYaw=0; exPitch=0;
       canvas.requestPointerLock?.();
       document.addEventListener('keydown',onExKeyDown); document.addEventListener('keyup',onExKeyUp); document.addEventListener('mousemove',onExMouseMove);
       document.addEventListener('pointerlockchange',()=>{ exPointerLocked=document.pointerLockElement===canvas; });
@@ -3933,7 +3907,6 @@ window.THREE = THREE; // expose for the plain (non-module) View Options script b
       exploring=false; if(exAnimId) cancelAnimationFrame(exAnimId);
       document.exitPointerLock?.();
       document.removeEventListener('keydown',onExKeyDown); document.removeEventListener('keyup',onExKeyUp); document.removeEventListener('mousemove',onExMouseMove);
-      if(exAvatar) exAvatar.visible=false;
       const cam=getRefs().camera, orbit=getRefs().orbit;
       if(cam){ cam.fov=42; cam.rotation.order='XYZ'; cam.position.set(0,7,10); cam.updateProjectionMatrix(); }
       if(orbit) orbit.enabled=true;
@@ -3945,7 +3918,7 @@ window.THREE = THREE; // expose for the plain (non-module) View Options script b
       b.addEventListener('click', ()=>{
         document.querySelectorAll('.wpPerspBtn').forEach(x=>x.classList.remove('active')); b.classList.add('active');
         currentPersp=b.dataset.persp;
-        if(exploring&&exAvatar){ const p=perspectives[currentPersp]; exAvatar.userData.body.material.color.setHex(p.color); }
+        if(exploring){ const cam=getRefs().camera; const p=perspectives[currentPersp]; if(cam){ cam.fov=p.fov; cam.updateProjectionMatrix(); } }
         hint('Perspective: '+currentPersp);
       });
     });
