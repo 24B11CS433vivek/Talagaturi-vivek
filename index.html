@@ -3094,14 +3094,52 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 </div>
 
 <div id="wpModelsBar">
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-    <span style="font-size:10px; font-weight:700; font-family:Geist Mono;">MY MODELS — /models</span>
-    <span id="wpModelsCount" style="font-size:9px; opacity:0.5; font-family:Geist Mono;">scanning...</span>
+  <div id="wpModelsBarHeader" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; gap:6px; cursor:pointer;">
+    <span style="font-size:10px; font-weight:700; font-family:Geist Mono; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">MY MODELS — /models</span>
+    <span id="wpModelsCount" style="font-size:9px; opacity:0.5; font-family:Geist Mono; flex-shrink:0;">scanning...</span>
+    <button id="wpModelsMinBtn" class="wpViewToggle" title="Minimize">−</button>
+    <button id="wpModelsCloseBtn" class="wpViewToggle" title="Close">✕</button>
   </div>
-  <button id="wpAddModelBtn" style="padding:7px; border-radius:8px; background:rgba(138,77,232,0.18); border:1px solid rgba(138,77,232,0.3); color:#c9a6ff; font-size:10px; cursor:pointer; font-family:Geist Mono; width:100%;">📦 Add GLB/OBJ/GLTF</button>
-  <div id="wpModelList" style="display:flex; flex-direction:column; gap:5px;"></div>
-  <div style="font-size:8px; opacity:0.4; font-family:Geist Mono; text-align:center; margin-top:4px;">Auto-detects .glb .gltf .obj • Both models</div>
+  <div id="wpModelsBody">
+    <button id="wpAddModelBtn" style="padding:7px; border-radius:8px; background:rgba(138,77,232,0.18); border:1px solid rgba(138,77,232,0.3); color:#c9a6ff; font-size:10px; cursor:pointer; font-family:Geist Mono; width:100%;">📦 Add GLB/OBJ/GLTF</button>
+    <div id="wpModelList" style="display:flex; flex-direction:column; gap:5px;"></div>
+    <div style="font-size:8px; opacity:0.4; font-family:Geist Mono; text-align:center; margin-top:4px;">Auto-detects .glb .gltf .obj • Both models</div>
+  </div>
 </div>
+
+<button id="wpModelsRestoreBtn" class="wpMiniRestoreBtn" title="Show Models Panel">📦</button>
+
+<script id="models-bar-controls-logic">
+(function(){
+  function setup(){
+    const bar=document.getElementById('wpModelsBar');
+    const minBtn=document.getElementById('wpModelsMinBtn');
+    const closeBtn=document.getElementById('wpModelsCloseBtn');
+    const restoreBtn=document.getElementById('wpModelsRestoreBtn');
+    if(!bar||!minBtn||!closeBtn||!restoreBtn){ setTimeout(setup,500); return; }
+
+    // Minimize just collapses the model list, keeping the header (and its buttons) visible.
+    minBtn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      bar.classList.toggle('modelsCollapsed');
+      minBtn.textContent=bar.classList.contains('modelsCollapsed')?'+':'−';
+    });
+
+    // Close fully hides the panel; a small 📦 chip appears near the same corner to bring it back.
+    closeBtn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      bar.classList.add('wpUserHidden');
+      restoreBtn.style.display='flex';
+    });
+    restoreBtn.addEventListener('click', ()=>{
+      bar.classList.remove('wpUserHidden');
+      restoreBtn.style.display='none';
+    });
+  }
+  setTimeout(setup, 900);
+  window.addEventListener('load', ()=> setTimeout(setup, 1600));
+})();
+</script>
 
 <div id="wpObjectControls">
   <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -3459,6 +3497,13 @@ window.THREE = THREE; // expose for the plain (non-module) View Options script b
 <style id="view-options-enhancement">
 #wpViewBar { position:fixed; left:calc(14px + env(safe-area-inset-left,0px)); bottom:calc(14px + env(safe-area-inset-bottom,0px)); z-index:10001; display:flex; flex-direction:column; gap:6px; padding:10px; background:var(--wp-glass-strong); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid var(--wp-border-strong); border-radius:var(--wp-radius); box-shadow:var(--wp-shadow-lg); min-width:172px; max-width:230px; }
 #wpViewBar.collapsed #wpViewContent { display:none; }
+#wpViewBar.wpUserHidden { display:none !important; }
+#wpModelsBar.wpUserHidden { display:none !important; }
+#wpModelsBar.modelsCollapsed #wpModelsBody { display:none; }
+.wpMiniRestoreBtn { display:none; align-items:center; justify-content:center; width:40px; height:40px; border-radius:12px; background:var(--wp-glass-strong); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid var(--wp-border-strong); color:#fff; font-size:16px; cursor:pointer; box-shadow:var(--wp-shadow-lg); position:fixed; z-index:10001; }
+.wpMiniRestoreBtn:hover { background:rgba(255,255,255,0.14); }
+#wpViewRestoreBtn { left:calc(14px + env(safe-area-inset-left,0px)); bottom:calc(14px + env(safe-area-inset-bottom,0px)); }
+#wpModelsRestoreBtn { right:calc(14px + env(safe-area-inset-right,0px)); bottom:calc(var(--wp-toolbar-h) + 30px); z-index:10002; }
 .wpViewHeader { display:flex; justify-content:space-between; align-items:center; gap:8px; cursor:pointer; min-height:26px; }
 .wpViewTitle { font-size:9px; font-weight:700; font-family:var(--wp-font); color:rgba(255,255,255,0.75); letter-spacing:0.6px; white-space:nowrap; }
 .wpViewToggle { width:26px; height:26px; border-radius:8px; background:rgba(255,255,255,0.08); border:1px solid var(--wp-border); color:#fff; font-size:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:background 0.15s ease; }
@@ -3484,7 +3529,8 @@ window.THREE = THREE; // expose for the plain (non-module) View Options script b
 <div id="wpViewBar">
   <div class="wpViewHeader" id="wpViewHeader">
     <span class="wpViewTitle">👁️ VIEW OPTIONS</span>
-    <button class="wpViewToggle" id="wpViewToggle">−</button>
+    <button class="wpViewToggle" id="wpViewToggle" title="Minimize">−</button>
+    <button class="wpViewToggle" id="wpViewCloseBtn" title="Close">✕</button>
   </div>
   <div id="wpViewContent">
     <div class="wpViewSection">
@@ -3569,6 +3615,8 @@ window.THREE = THREE; // expose for the plain (non-module) View Options script b
   </div>
 </div>
 
+<button id="wpViewRestoreBtn" class="wpMiniRestoreBtn" title="Show View Options">👁️</button>
+
 <script id="view-options-enhanced-logic">
 (function(){
   function setup(){
@@ -3589,6 +3637,20 @@ window.THREE = THREE; // expose for the plain (non-module) View Options script b
     viewHeader.addEventListener('click', ()=>{
       viewBar.classList.toggle('collapsed');
       viewToggle.textContent=viewBar.classList.contains('collapsed')?'+':'−';
+    });
+
+    // Close fully hides the panel (a small 👁️ chip appears to bring it back), separate
+    // from Minimize which just collapses the content and keeps the header visible.
+    const viewCloseBtn=document.getElementById('wpViewCloseBtn');
+    const viewRestoreBtn=document.getElementById('wpViewRestoreBtn');
+    viewCloseBtn?.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      viewBar.classList.add('wpUserHidden');
+      if(viewRestoreBtn) viewRestoreBtn.style.display='flex';
+    });
+    viewRestoreBtn?.addEventListener('click', ()=>{
+      viewBar.classList.remove('wpUserHidden');
+      viewRestoreBtn.style.display='none';
     });
 
     function getRefs(){
@@ -3836,12 +3898,15 @@ window.THREE = THREE; // expose for the plain (non-module) View Options script b
     });
 
     // ===== EXPLORE MODE (true first-person — the camera IS your eyes, ground-clamped) =====
+    // Each creature gets a realistic eye height, a field of view that reflects how wide
+    // that animal actually sees, and a distinct "personality" (gait bob/sway + near clip
+    // so tiny creatures don't clip through blades of grass right in front of their eyes).
     const perspectives={
-      human:{eye:1.65, speed:2.4, fov:62},
-      elephant:{eye:2.8, speed:1.7, fov:55},
-      dog:{eye:0.55, speed:3.4, fov:75},
-      ant:{eye:0.05, speed:0.9, fov:92},
-      mosquito:{eye:0.16, speed:1.3, fov:100}
+      human:   { eye:1.65,  speed:1.6, runMult:2.4, fov:75,  near:0.05,  bobAmp:0.035, bobFreq:8,   swayAmp:0.012, label:'human eye-level · natural forward-facing view, steady stride' },
+      elephant:{ eye:2.4,   speed:2.0, runMult:1.7, fov:88,  near:0.05,  bobAmp:0.09,  bobFreq:2.6, swayAmp:0.05,  label:'elephant eye-level · wide side vision, slow heavy lumbering gait' },
+      dog:     { eye:0.45,  speed:2.6, runMult:3.4, fov:105, near:0.03,  bobAmp:0.055, bobFreq:10,  swayAmp:0.02,  label:'dog eye-level · wide low-to-ground vision, bouncy energetic trot' },
+      ant:     { eye:0.006, speed:0.4, runMult:2.6, fov:145, near:0.001, bobAmp:0.003, bobFreq:15,  swayAmp:0.006, label:'ant eye-level · near-panoramic compound-eye vision, quick skittering steps' },
+      mosquito:{ eye:0.02,  speed:0.9, runMult:1.4, fov:150, near:0.001, bobAmp:0.05,  bobFreq:5,   swayAmp:0.07,  hover:true, label:'mosquito eye-level · panoramic compound-eye vision, erratic hovering flight' }
     };
     let exploring=false, currentPersp='human', exKeys={}, exYaw=0, exPitch=0, exPointerLocked=false, exAnimId=null;
     let exPosX=0, exPosY=0.6, exPosZ=3;
@@ -3861,7 +3926,8 @@ window.THREE = THREE; // expose for the plain (non-module) View Options script b
       exAnimId=requestAnimationFrame(exploreLoop);
       const refs=getRefs(); const cam=refs.camera; if(!cam) return;
       const p=perspectives[currentPersp];
-      const spd=p.speed*(exKeys['shift']?2.2:1)*0.016;
+      const runMult=p.runMult||2.2;
+      const spd=p.speed*(exKeys['shift']?runMult:1)*0.016;
 
       // Movement is relative to where you're LOOKING (yaw only — pitch doesn't tilt your walk)
       const fwd={x:Math.sin(exYaw), z:Math.cos(exYaw)};
@@ -3871,7 +3937,8 @@ window.THREE = THREE; // expose for the plain (non-module) View Options script b
       if(exKeys['s']){ mx-=fwd.x; mz-=fwd.z; }
       if(exKeys['d']){ mx+=right.x; mz+=right.z; }
       if(exKeys['a']){ mx-=right.x; mz-=right.z; }
-      if(mx||mz){
+      const isMoving=!!(mx||mz);
+      if(isMoving){
         const len=Math.hypot(mx,mz); mx/=len; mz/=len;
         const nx=exPosX+mx*spd, nz=exPosZ+mz*spd;
         const gy=groundHeightAt(nx,nz);
@@ -3880,9 +3947,24 @@ window.THREE = THREE; // expose for the plain (non-module) View Options script b
       const gy=groundHeightAt(exPosX,exPosZ);
       if(gy!==null) exPosY=gy;
 
-      cam.position.set(exPosX, exPosY+p.eye, exPosZ);
+      // Personality: each creature has its own gait — a heavy elephant lumbers and rolls,
+      // a dog bounces, an ant/mosquito jitters or hovers — so it feels like THAT animal,
+      // not just a camera at a different height.
+      const t=performance.now()/1000;
+      const bobFreq=p.bobFreq||8, bobAmp=p.bobAmp||0.03, swayAmp=p.swayAmp||0.01;
+      let bobY=0, swayX=0;
+      if(p.hover){
+        bobY = Math.sin(t*bobFreq)*bobAmp + Math.sin(t*bobFreq*2.7)*bobAmp*0.3;
+        swayX = Math.sin(t*bobFreq*0.6)*swayAmp;
+      } else if(isMoving){
+        bobY = Math.abs(Math.sin(t*bobFreq))*bobAmp;
+        swayX = Math.sin(t*bobFreq*0.5)*swayAmp;
+      }
+
+      const eyeNear=p.near||0.1;
+      cam.position.set(exPosX+right.x*swayX, exPosY+p.eye+bobY, exPosZ+right.z*swayX);
       cam.rotation.order='YXZ'; cam.rotation.y=exYaw; cam.rotation.x=exPitch;
-      if(cam.fov!==p.fov){ cam.fov=p.fov; cam.updateProjectionMatrix(); }
+      if(cam.fov!==p.fov || cam.near!==eyeNear){ cam.fov=p.fov; cam.near=eyeNear; cam.updateProjectionMatrix(); }
 
       const renderer=refs.renderer, scene=refs.scene; if(renderer&&scene) renderer.render(scene,cam);
     }
@@ -3900,7 +3982,7 @@ window.THREE = THREE; // expose for the plain (non-module) View Options script b
       document.addEventListener('keydown',onExKeyDown); document.addEventListener('keyup',onExKeyUp); document.addEventListener('mousemove',onExMouseMove);
       document.addEventListener('pointerlockchange',()=>{ exPointerLocked=document.pointerLockElement===canvas; });
       document.getElementById('wpExploreBtn').textContent='🚪 Exit Explore'; document.getElementById('wpExploreBtn').classList.add('active');
-      hint('Explore: WASD walk · mouse look 360° · Shift run · Esc exit');
+      hint('Explore: WASD walk · mouse look 360° · Shift run · Esc exit — '+(perspectives[currentPersp].label||''));
       exploreLoop();
     }
     function exitExplore(){
@@ -3908,7 +3990,7 @@ window.THREE = THREE; // expose for the plain (non-module) View Options script b
       document.exitPointerLock?.();
       document.removeEventListener('keydown',onExKeyDown); document.removeEventListener('keyup',onExKeyUp); document.removeEventListener('mousemove',onExMouseMove);
       const cam=getRefs().camera, orbit=getRefs().orbit;
-      if(cam){ cam.fov=42; cam.rotation.order='XYZ'; cam.position.set(0,7,10); cam.updateProjectionMatrix(); }
+      if(cam){ cam.fov=42; cam.near=0.1; cam.rotation.order='XYZ'; cam.position.set(0,7,10); cam.updateProjectionMatrix(); }
       if(orbit) orbit.enabled=true;
       document.getElementById('wpExploreBtn').textContent='🚶 Enter Explore'; document.getElementById('wpExploreBtn').classList.remove('active');
       hint('Explore OFF');
@@ -3918,8 +4000,8 @@ window.THREE = THREE; // expose for the plain (non-module) View Options script b
       b.addEventListener('click', ()=>{
         document.querySelectorAll('.wpPerspBtn').forEach(x=>x.classList.remove('active')); b.classList.add('active');
         currentPersp=b.dataset.persp;
-        if(exploring){ const cam=getRefs().camera; const p=perspectives[currentPersp]; if(cam){ cam.fov=p.fov; cam.updateProjectionMatrix(); } }
-        hint('Perspective: '+currentPersp);
+        if(exploring){ const cam=getRefs().camera; const p=perspectives[currentPersp]; if(cam){ cam.fov=p.fov; cam.near=p.near||0.1; cam.updateProjectionMatrix(); } }
+        hint('Perspective: '+(perspectives[currentPersp].label||currentPersp));
       });
     });
     document.querySelector('.wpPerspBtn[data-persp="human"]')?.classList.add('active');
