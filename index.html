@@ -3899,17 +3899,18 @@ window.THREE = THREE; // expose for the plain (non-module) View Options script b
 
     // ===== EXPLORE MODE (true first-person — the camera IS your eyes, ground-clamped) =====
     // Each creature gets a realistic eye height, a field of view that reflects how wide
-    // that animal actually sees, and a distinct "personality" (gait bob/sway + near clip
-    // so tiny creatures don't clip through blades of grass right in front of their eyes).
+    // that animal actually sees, and a distinct "personality" (gentle gait bob/sway) —
+    // amplitudes are kept small and smoothed so movement feels stable, not shaky.
     const perspectives={
-      human:   { eye:1.65,  speed:1.6, runMult:2.4, fov:75,  near:0.05,  bobAmp:0.035, bobFreq:8,   swayAmp:0.012, label:'human eye-level · natural forward-facing view, steady stride' },
-      elephant:{ eye:2.4,   speed:2.0, runMult:1.7, fov:88,  near:0.05,  bobAmp:0.09,  bobFreq:2.6, swayAmp:0.05,  label:'elephant eye-level · wide side vision, slow heavy lumbering gait' },
-      dog:     { eye:0.45,  speed:2.6, runMult:3.4, fov:105, near:0.03,  bobAmp:0.055, bobFreq:10,  swayAmp:0.02,  label:'dog eye-level · wide low-to-ground vision, bouncy energetic trot' },
-      ant:     { eye:0.006, speed:0.4, runMult:2.6, fov:145, near:0.001, bobAmp:0.003, bobFreq:15,  swayAmp:0.006, label:'ant eye-level · near-panoramic compound-eye vision, quick skittering steps' },
-      mosquito:{ eye:0.02,  speed:0.9, runMult:1.4, fov:150, near:0.001, bobAmp:0.05,  bobFreq:5,   swayAmp:0.07,  hover:true, label:'mosquito eye-level · panoramic compound-eye vision, erratic hovering flight' }
+      human:   { eye:1.65,  speed:1.6, runMult:2.4, fov:75,  near:0.05,  bobAmp:0.018, bobFreq:8,   swayAmp:0.006, label:'human eye-level · natural forward-facing view, steady stride' },
+      elephant:{ eye:2.4,   speed:2.0, runMult:1.7, fov:88,  near:0.05,  bobAmp:0.05,  bobFreq:2.6, swayAmp:0.025, label:'elephant eye-level · wide side vision, slow heavy lumbering gait' },
+      dog:     { eye:0.45,  speed:2.6, runMult:3.4, fov:105, near:0.03,  bobAmp:0.03,  bobFreq:10,  swayAmp:0.01,  label:'dog eye-level · wide low-to-ground vision, bouncy energetic trot' },
+      ant:     { eye:0.006, speed:0.4, runMult:2.6, fov:145, near:0.001, bobAmp:0.0015,bobFreq:15,  swayAmp:0.003, label:'ant eye-level · near-panoramic compound-eye vision, quick skittering steps' },
+      mosquito:{ eye:0.02,  speed:0.9, runMult:1.4, fov:150, near:0.001, bobAmp:0.03,  bobFreq:5,   swayAmp:0.035, hover:true, label:'mosquito eye-level · panoramic compound-eye vision, erratic hovering flight' }
     };
+    const perspOrder=['human','elephant','dog','ant','mosquito'];
     let exploring=false, currentPersp='human', exKeys={}, exYaw=0, exPitch=0, exPointerLocked=false, exAnimId=null;
-    let exPosX=0, exPosY=0.6, exPosZ=3;
+    let exPosX=0, exPosY=0.6, exPosZ=3, exCamY=null;
     const exRay=new THREE.Raycaster(), exDown=new THREE.Vector3(0,-1,0);
 
     // Ground-clamp: raycast straight down onto the actual island mesh so you always walk ON
@@ -3962,14 +3963,41 @@ window.THREE = THREE; // expose for the plain (non-module) View Options script b
       }
 
       const eyeNear=p.near||0.1;
-      cam.position.set(exPosX+right.x*swayX, exPosY+p.eye+bobY, exPosZ+right.z*swayX);
+      // Smooth only the vertical camera position — this is what removes the "shaking":
+      // raw ground-raycast height + gait bob can flicker frame to frame, so we ease the
+      // rendered eye height toward its target instead of snapping to it every frame.
+      const targetCamY=exPosY+p.eye+bobY;
+      exCamY = exCamY===null ? targetCamY : exCamY+(targetCamY-exCamY)*0.28;
+      cam.position.set(exPosX+right.x*swayX, exCamY, exPosZ+right.z*swayX);
       cam.rotation.order='YXZ'; cam.rotation.y=exYaw; cam.rotation.x=exPitch;
       if(cam.fov!==p.fov || cam.near!==eyeNear){ cam.fov=p.fov; cam.near=eyeNear; cam.updateProjectionMatrix(); }
 
       const renderer=refs.renderer, scene=refs.scene; if(renderer&&scene) renderer.render(scene,cam);
     }
-    function onExKeyDown(e){ if(!exploring) return; exKeys[e.key.toLowerCase()]=true; if(e.key==='Shift') exKeys['shift']=true; if(e.key==='Escape') exitExplore(); }
-    function onExKeyUp(e){ exKeys[e.key.toLowerCase()]=false; if(e.key==='Shift') exKeys['shift']=false; }
+    function onExKeyDown(e){
+      if(!exploring) return;
+      let k=e.key.toLowerCase();
+      if(k==='arrowup'||k==='arrowdown'||k==='arrowleft'||k==='arrowright') e.preventDefault();
+      if(k==='arrowup') k='w'; else if(k==='arrowdown') k='s'; else if(k==='arrowleft') k='a'; else if(k==='arrowright') k='d';
+      exKeys[k]=true;
+      if(e.key==='Shift') exKeys['shift']=true;
+      if(e.key==='Escape'){ exitExplore(); return; }
+      if(k==='c' && !e.repeat) cyclePersp();
+    }
+    function onExKeyUp(e){
+      let k=e.key.toLowerCase();
+      if(k==='arrowup') k='w'; else if(k==='arrowdown') k='s'; else if(k==='arrowleft') k='a'; else if(k==='arrowright') k='d';
+      exKeys[k]=false;
+      if(e.key==='Shift') exKeys['shift']=false;
+    }
+    function cyclePersp(){
+      const idx=perspOrder.indexOf(currentPersp);
+      currentPersp=perspOrder[(idx+1)%perspOrder.length];
+      document.querySelectorAll('.wpPerspBtn').forEach(x=>x.classList.toggle('active', x.dataset.persp===currentPersp));
+      const cam=getRefs().camera, p=perspectives[currentPersp];
+      if(cam){ cam.fov=p.fov; cam.near=p.near||0.1; cam.updateProjectionMatrix(); }
+      hint('Perspective: '+(p.label||currentPersp));
+    }
     function onExMouseMove(e){ if(!exploring||!exPointerLocked) return; exYaw-=e.movementX*0.0024; exPitch-=e.movementY*0.0022; exPitch=Math.max(-1.4,Math.min(1.4,exPitch)); }
     function enterExplore(){
       const refs=getRefs(); const cam=refs.camera, orbit=refs.orbit, canvas=refs.renderer?.domElement;
@@ -3977,12 +4005,13 @@ window.THREE = THREE; // expose for the plain (non-module) View Options script b
       exploring=true; if(orbit) orbit.enabled=false;
       exPosX=0; exPosZ=3;
       const gy=groundHeightAt(exPosX,exPosZ); exPosY=gy!==null?gy:0.6;
+      exCamY=null; // reset smoothing so the camera snaps cleanly to the new start point
       exYaw=0; exPitch=0;
       canvas.requestPointerLock?.();
       document.addEventListener('keydown',onExKeyDown); document.addEventListener('keyup',onExKeyUp); document.addEventListener('mousemove',onExMouseMove);
       document.addEventListener('pointerlockchange',()=>{ exPointerLocked=document.pointerLockElement===canvas; });
       document.getElementById('wpExploreBtn').textContent='🚪 Exit Explore'; document.getElementById('wpExploreBtn').classList.add('active');
-      hint('Explore: WASD walk · mouse look 360° · Shift run · Esc exit — '+(perspectives[currentPersp].label||''));
+      hint('Explore: WASD/Arrows walk · mouse look 360° · Shift run · C change creature · Esc exit — '+(perspectives[currentPersp].label||''));
       exploreLoop();
     }
     function exitExplore(){
