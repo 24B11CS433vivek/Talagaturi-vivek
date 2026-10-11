@@ -1,6 +1,3 @@
-User-agent: *
-Allow: /
-Allow: /index.html
-Allow: /Talagaturi-Vivek-Portfolio.pdf
+User-agent: * Allow: /
 
-Sitemap: https://pages.dev
+Sitemap: https://talagaturi-vivek.pages.dev/sitemap.xml
