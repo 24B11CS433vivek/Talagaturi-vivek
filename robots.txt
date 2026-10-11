@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Allow: /index.html
+Allow: /Talagaturi-Vivek-Portfolio.pdf
+
+Sitemap: https://pages.dev
